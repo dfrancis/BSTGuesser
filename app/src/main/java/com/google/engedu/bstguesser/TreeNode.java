@@ -19,6 +19,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.util.Log;
 
 public class TreeNode {
     private static final int SIZE = 60;
@@ -38,11 +39,39 @@ public class TreeNode {
     }
 
     public void insert(int valueToInsert) {
-        /**
-         **
-         **  YOUR CODE GOES HERE
-         **
-         **/
+        TreeNode newNode = new TreeNode(valueToInsert);
+        TreeNode parent = this;
+        boolean foundInsertPoint = false;
+        Log.d("BSTG", "insert start");
+        while (!foundInsertPoint) {
+            if (valueToInsert < parent.value) {
+                if (parent.left == null) {
+                    foundInsertPoint = true;
+                    parent.left = newNode;
+                    Log.d("BSTG", "insert  left");
+                }
+                else {
+                    Log.d("BSTG", "insert search left");
+                    parent = parent.left;
+                }
+            }
+            else if (valueToInsert > parent.value) {
+                if (parent.right == null) {
+                    foundInsertPoint = true;
+                    parent.right = newNode;
+                    Log.d("BSTG", "insert right");
+                }
+                else {
+                    parent = parent.right;
+                    Log.d("BSTG", "insert search right");
+                }
+            }
+            else {
+                return;
+            }
+        }
+
+        Log.d("BSTG", "insert end");
     }
 
     public int getValue() {
@@ -81,6 +110,7 @@ public class TreeNode {
         paint.setTextSize(SIZE * 2/3);
         paint.setTextAlign(Paint.Align.CENTER);
         c.drawText(showValue ? String.valueOf(value) : "?", x, y + SIZE * 3/4, paint);
+        // c.drawText(String.valueOf(value), x, y + SIZE * 3/4, paint);
 
         if (height > 0) {
             Paint heightPaint = new Paint();
