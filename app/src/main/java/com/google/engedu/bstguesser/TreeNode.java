@@ -21,34 +21,38 @@ import android.graphics.Paint;
 import android.graphics.Point;
 import android.util.Log;
 
+
 public class TreeNode {
     private static final int SIZE = 60;
     private static final int MARGIN = 20;
     private int value, height;
-    protected TreeNode left, right;
+    protected TreeNode left, right, parent;
     private boolean showValue;
     private int x, y;
     private int color = Color.rgb(150, 150, 250);
 
     public TreeNode(int value) {
         this.value = value;
-        this.height = 0;
+        this.height = 0; //1;
         showValue = false;
         left = null;
         right = null;
+        parent = null;
     }
 
-    public void insert(int valueToInsert) {
+    public TreeNode insert(int valueToInsert) {
+        TreeNode retNode = this;
         TreeNode newNode = new TreeNode(valueToInsert);
         TreeNode parent = this;
         boolean foundInsertPoint = false;
-        Log.d("BSTG", "insert start");
+        Log.d("BSTG", "insert start, value=" + valueToInsert);
         while (!foundInsertPoint) {
             if (valueToInsert < parent.value) {
                 if (parent.left == null) {
                     foundInsertPoint = true;
                     parent.left = newNode;
-                    Log.d("BSTG", "insert  left");
+                    parent.left.parent = parent;
+                    Log.d("BSTG", "insert left");
                 }
                 else {
                     Log.d("BSTG", "insert search left");
@@ -59,6 +63,7 @@ public class TreeNode {
                 if (parent.right == null) {
                     foundInsertPoint = true;
                     parent.right = newNode;
+                    parent.right.parent = parent;
                     Log.d("BSTG", "insert right");
                 }
                 else {
@@ -67,11 +72,202 @@ public class TreeNode {
                 }
             }
             else {
-                return;
+                return retNode;
+            }
+        }
+
+        //
+        // Re-calculate node heights
+        //
+        TreeNode parentIter = parent;
+        while (parentIter != null) {
+            int height;
+            if (parentIter.left == null) {
+                height = parentIter.right.height + 1;
+            }
+            else if (parentIter.right == null) {
+                height = parentIter.left.height + 1;
+            }
+            else {
+                height = Math.max(parentIter.left.height, parentIter.right.height) + 1;
+            }
+            parentIter.height = height;
+            parentIter = parentIter.parent;
+        }
+
+        //
+        // Find first unbalanced ancestor, child and grandchild
+        //
+        // nodeD : first unbalanced ancestor
+        // nodeC : child of nodeD on path to new node
+        // nodeB : grandchild of nodeD on path to new node
+        //
+        parentIter = parent;
+        TreeNode nodeD = null;
+        TreeNode nodeC = null;
+        TreeNode nodeB = null;
+        boolean foundUnbalanced = false;
+        while (parentIter != null) {
+            nodeB = nodeC;
+            nodeC = nodeD;
+            nodeD = parentIter;
+
+            int leftHeight = 0;
+            int rightHeight = 0;
+            if (parentIter.left != null) {
+                leftHeight = parentIter.left.height;
+            }
+            if (parentIter.right != null) {
+                rightHeight = parentIter.right.height;
+            }
+            int balanceFactor = rightHeight - leftHeight;
+            if (balanceFactor < -1 || balanceFactor > 1) {
+                Log.d("BSTD", "rightHeight=" + rightHeight + " leftHeight=" + leftHeight);
+                foundUnbalanced = true;
+                break;
+            }
+            parentIter = parentIter.parent;
+        }
+
+        if (foundUnbalanced) {
+            if (true) {
+                if (nodeD == null) {
+                    Log.d("BSTG", "nodeD is null");
+                }
+                if (nodeC == null) {
+                    Log.d("BSTG", "nodeC is null");
+                }
+                if (nodeB == null) {
+                    Log.d("BSTG", "nodeB is null");
+                }
+                Log.d("BSTG", "nodeD.value=" + nodeD.value + " nodeC.value=" + nodeC.value);
+            }
+
+            //if (nodeB == null) {
+            //    nodeB = newNode;
+            //}
+
+            //
+            // Re-balance tree
+            //
+            if (nodeD.left == nodeC) {
+                if (nodeC.left == nodeB) {
+                    // Left-left case
+                    Log.d("BSTG", "Left-Left case");
+                    nodeD.left = nodeC.right;
+                    if (nodeD.left != null) {
+                        nodeD.left.parent = nodeD;
+                    }
+                    nodeC.right = nodeD;
+                    nodeC.parent = nodeD.parent;
+                    nodeD.parent = nodeC;
+                    if (nodeC.parent != null) {
+                        if (nodeC.parent.left == nodeD) {
+                            nodeC.parent.left = nodeC;
+                        } else {
+                            nodeC.parent.right = nodeC;
+                        }
+                    }
+                    nodeD.height -= 1;
+                    if (nodeD == this) {
+                        retNode = nodeC;
+                    }
+                }
+                else {
+                    // Left-Right case
+                    Log.d("BSTG", "Left-Right case");
+                    nodeD.left = nodeB;
+                    nodeB.parent = nodeD;
+                    nodeC.right = nodeB.left;
+                    if (nodeB.left != null) {
+                        nodeB.left.parent = nodeC;
+                    }
+                    nodeB.left = nodeC;
+                    nodeC.parent = nodeB;
+
+                    nodeD.left = nodeB.right;
+                    if (nodeD.left != null) {
+                        nodeD.left.parent = nodeD;
+                    }
+                    nodeB.right = nodeD;
+                    nodeB.parent = nodeD.parent;
+                    nodeD.parent = nodeB;
+                    if (nodeB.parent != null) {
+                        if (nodeB.parent.left == nodeD) {
+                            nodeB.parent.left = nodeB;
+                        } else {
+                            nodeB.parent.right = nodeB;
+                        }
+                    }
+                    nodeD.height -= 1;
+                    nodeC.height -= 1;
+                    nodeB.height += 1;
+                    if (nodeD == this) {
+                        retNode = nodeB;
+                    }
+                }
+            }
+            else {
+                if (nodeC.left == nodeB) {
+                    // Right-Left case
+                    Log.d("BSTG", "Right-Left case");
+                    nodeD.right = nodeB;
+                    nodeB.parent = nodeD;
+                    nodeC.left = nodeB.right;
+                    if (nodeB.right != null) {
+                        nodeB.right.parent = nodeC;
+                    }
+                    nodeB.right = nodeC;
+                    nodeC.parent = nodeB;
+
+                    nodeD.right = nodeB.left;
+                    if (nodeD.right != null) {
+                        nodeD.right.parent = nodeD;
+                    }
+                    nodeB.left = nodeD;
+                    nodeB.parent = nodeD.parent;
+                    nodeD.parent = nodeB;
+                    if (nodeB.parent != null) {
+                        if (nodeB.parent.left == nodeD) {
+                            nodeB.parent.left = nodeB;
+                        } else {
+                            nodeB.parent.right = nodeB;
+                        }
+                    }
+                    nodeD.height -= 1;
+                    nodeC.height -= 1;
+                    nodeB.height += 1;
+                    if (nodeD == this) {
+                        retNode = nodeB;
+                    }
+                }
+                else {
+                    // Right-Right case
+                    Log.d("BSTG", "Right-Right case");
+                    nodeD.right = nodeC.left;
+                    if (nodeD.right != null) {
+                        nodeD.right.parent = nodeD;
+                    }
+                    nodeC.left = nodeD;
+                    nodeC.parent = nodeD.parent;
+                    nodeD.parent = nodeC;
+                    if (nodeC.parent != null) {
+                        if (nodeC.parent.left == nodeD) {
+                            nodeC.parent.left = nodeC;
+                        } else {
+                            nodeC.parent.right = nodeC;
+                        }
+                    }
+                    nodeD.height -= 1;
+                    if (nodeD == this) {
+                        retNode = nodeC;
+                    }
+                }
             }
         }
 
         Log.d("BSTG", "insert end");
+        return retNode;
     }
 
     public int getValue() {
